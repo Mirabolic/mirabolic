@@ -9,13 +9,14 @@ class synthetic_data():
     #       "labels"   = "endogenous variables"
 
     def __init__(self,
-                 N=40000,
+                 N=100000,
                  num_features=8,
                  true_betas=None,
                  distribution='Poisson',
                  train_fraction=.6,
                  test_fraction=.3,
                  valid_fraction=.1,
+                 exposure=False,
                  ):
         self.N = N
         self.num_features = num_features
@@ -25,6 +26,7 @@ class synthetic_data():
                           'test': test_fraction,
                           'valid': valid_fraction}
 
+        self.has_exposure = exposure
         if true_betas is None:
             self.make_betas()
         else:
@@ -32,6 +34,7 @@ class synthetic_data():
 
         self.make_features()
         self.make_params()
+        self.make_exposure()
         self.make_data()
         self.make_train_test_valid_split()
 
@@ -63,15 +66,31 @@ class synthetic_data():
             self.params['p'] = 1 / (
                 1 + np.exp(-(self.features @ self.true_betas['p'])))
 
+    def make_exposure(self):
+        if self.has_exposure:
+            self.exposure = (
+                9 * np.random.randint(2, size=self.N).astype(float) + 1)
+            self.exposure *= 0.1
+            # Useful for debugging...
+            # self.exposure = np.ones(self.N)
+
     def make_data(self):
         if self.distribution == 'Poisson':
+            lam = self.params['lambda']
+            if self.has_exposure:
+                lam *= self.exposure
             self.labels = np.random.poisson(
-                lam=self.params['lambda'], size=self.N)
+                lam=lam, size=self.N)
         elif self.distribution == 'Negative Binomial':
+            n = self.params['n']
+            if self.has_exposure:
+                n *= self.exposure
             self.labels = np.random.negative_binomial(
-                n=self.params['n'],
+                n=n,
                 p=self.params['p'],
                 size=self.N)
+        if self.has_exposure:
+            self.labels = np.vstack([self.labels, self.exposure]).T
 
     def make_train_test_valid_split(self):
         self.features_split = {}

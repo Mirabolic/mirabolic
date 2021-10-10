@@ -12,16 +12,30 @@ def basic_glm_model(num_features=None,
                     kernel_regularizer=None,
                     optimizer=None,
                     loss=None,
+                    exposure=False,
                     ):
     if optimizer is None:
         optimizer = 'adam'
 
-    if (loss == 'Poisson') or loss is None:
-        loss = actuarial_loss_functions.Poisson
-    elif loss == 'Negative Binomial':
-        loss = actuarial_loss_functions.NegativeBinomial
+    if loss is None:
+        loss = 'Poisson'
+    print('Loss: %s %s' % (
+        loss, 'with exposure' if exposure else ''))
 
-    output_dim = 1  # Only 1 output, because regression
+    if (loss == 'Poisson'):
+        # "output_dim" = "how many numbers do we predict?"
+        output_dim = 1
+        if not exposure:
+            loss = actuarial_loss_functions.Poisson
+        else:
+            loss = actuarial_loss_functions.Poisson_with_exposure
+    elif loss == 'Negative Binomial':
+        output_dim = 2
+        if not exposure:
+            loss = actuarial_loss_functions.Negative_Binomial
+        else:
+            loss = actuarial_loss_functions.Negative_Binomial_with_exposure
+
     model = Sequential()
     model.add(Dense(
         output_dim,
@@ -31,7 +45,6 @@ def basic_glm_model(num_features=None,
         name='betas',
     ))
     model.compile(loss=loss, optimizer=optimizer)
-
     return(model)
 
 
@@ -45,11 +58,13 @@ def build_and_train_basic_glm(
     batch_size=256,
     epochs=40,
     verbose=0,
+    exposure=False,
 ):
     num_features = np.shape(x_train)[1]
 
     if model is None:
-        model = basic_glm_model(loss=loss, num_features=num_features)
+        model = basic_glm_model(
+            loss=loss, num_features=num_features, exposure=exposure)
     if (x_valid is not None) and (y_valid is not None):
         validation_data = (x_valid, y_valid)
         callbacks = [keras.callbacks.EarlyStopping(
@@ -70,11 +85,13 @@ def build_and_train_basic_glm(
         score = None
 
     betas = model.get_layer(name='betas').get_weights()[0]
+    beta_constant = model.get_layer(name='betas').get_weights()[1][0]
 
     results = {}
     results['model'] = model
     results['score'] = score
     results['history'] = history
     results['betas'] = betas
+    results['beta_constant'] = beta_constant
 
     return(results)
