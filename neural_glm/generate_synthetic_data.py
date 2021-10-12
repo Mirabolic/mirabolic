@@ -1,6 +1,7 @@
 # Make some synthetic data from, e.g., Poisson and Negative Binomial
 # distributions.
 
+import datetime
 import numpy as np
 
 
@@ -17,7 +18,13 @@ class synthetic_data():
                  test_fraction=.3,
                  valid_fraction=.1,
                  exposure=False,
+                 random_seed=None,
                  ):
+        self.random_seed = random_seed
+        if random_seed is None:
+            self.random_seed = hash(str(datetime.datetime.now()))
+        self.rng = np.random.default_rng(random_seed)
+
         self.N = N
         self.num_features = num_features
         assert distribution in ['Poisson', 'Negative Binomial']
@@ -41,17 +48,17 @@ class synthetic_data():
     def make_betas(self):
         self.true_betas = {}
         if self.distribution == 'Poisson':
-            b = np.power(np.random.randn(self.num_features), 3)
+            b = np.power(self.rng.normal(size=(self.num_features)), 3)
             b /= np.max(np.abs(b))
             self.true_betas['lambda'] = b
         elif self.distribution == 'Negative Binomial':
-            self.true_betas['n'] = np.random.exponential(
+            self.true_betas['n'] = self.rng.exponential(
                 size=self.num_features)
-            self.true_betas['p'] = np.random.uniform(
+            self.true_betas['p'] = self.rng.uniform(
                 size=self.num_features)
 
     def make_features(self):
-        self.features = np.random.randn(self.N, self.num_features)
+        self.features = self.rng.normal(size=(self.N, self.num_features))
 
     def make_params(self):
         self.params = {}
@@ -63,29 +70,35 @@ class synthetic_data():
             # canonical is "g(mu)=log[mu/ [n*(1+mu/n)]"
             # where mu=np/(1-p)
             self.params['n'] = np.exp(self.features @ self.true_betas['n'])
+            # Sigmoid function:
             self.params['p'] = 1 / (
                 1 + np.exp(-(self.features @ self.true_betas['p'])))
 
     def make_exposure(self):
         if self.has_exposure:
+            # Exposure is split 50/50 between "a" and "b"
+            exposure_a = 1
+            exposure_b = 3
+            assert exposure_a != exposure_b
             self.exposure = (
-                9 * np.random.randint(2, size=self.N).astype(float) + 1)
-            self.exposure *= 0.1
+                abs(exposure_b-exposure_a) *
+                self.rng.integers(2, size=self.N).astype(float))
+            self.exposure += min(exposure_a, exposure_b)
             # Useful for debugging...
-            # self.exposure = np.ones(self.N)
+            # self.exposure = 2 * np.ones(self.N)
 
     def make_data(self):
         if self.distribution == 'Poisson':
             lam = self.params['lambda']
             if self.has_exposure:
                 lam *= self.exposure
-            self.labels = np.random.poisson(
+            self.labels = self.rng.poisson(
                 lam=lam, size=self.N)
         elif self.distribution == 'Negative Binomial':
             n = self.params['n']
             if self.has_exposure:
                 n *= self.exposure
-            self.labels = np.random.negative_binomial(
+            self.labels = self.rng.negative_binomial(
                 n=n,
                 p=self.params['p'],
                 size=self.N)

@@ -1,106 +1,116 @@
 # Loss functions corresponding to some popular actuarial statistical models.
 
 # These functions all correspond to the negative log-likelihood of the
-# corresponding distribution.  In typical fashion, we ignore terms that are
-# constant functions of the observed data, since they do not affect the
-# gradients.
+# corresponding distribution (with data-constant terms suppressed).  In
+# typical fashion, we ignore terms that are constant functions of the
+# observed data, since they do not affect the gradients.
 
 import tensorflow as tf
 from tensorflow.python.framework.ops import convert_to_tensor
 from tensorflow.python.ops.math_ops import cast as tf_cast
 from tensorflow.math import log, lgamma, exp, sigmoid
-import keras.backend as K
 
 
-def Poisson(y_true, y_pred):
-    # "y_pred" predicts the Poisson "lambda".  Note that the standard
-    # tf.keras.losses.Poisson() corresponds to -likelihood, whereas this
-    # computes the -log(likelihood), which should be more numerically
-    # stable, hopefully.
-    y_lambda = convert_to_tensor(y_pred)
-    num_events = tf_cast(y_true, y_pred.dtype)
-    return -K.mean(
-        num_events*y_lambda
-        - exp(y_lambda),
-        axis=-1,
-    )
+def one_dim(t):
+    # Convert tensors of shape (N,1) to (N).
+    # Tensors of shape (N) remain unchanged.
+    return(tf.reshape(t, (-1,)))
 
 
-def Poisson_with_exposure(y_true, y_pred):
-    # "y_pred" predicts the Poisson "lambda".  "y_true" is a pair of values,
+def Poisson_link(y_true, y_pred):
+    # "y_pred" predicts the Poisson log(lambda), since "log" is the standard
+    # Poisson Regression link function
+    y_log_lambda = one_dim(convert_to_tensor(y_pred))
+    num_events = one_dim(tf_cast(y_true, y_pred.dtype))
+
+    # We ignore terms in the neg log likelihood that are constant given
+    # the observations, since they're irrelevant for minimization
+    neg_log_likelihood = -(num_events*y_log_lambda - exp(y_log_lambda))
+    return neg_log_likelihood
+
+
+def Poisson_link_with_exposure(y_true, y_pred):
+    # "y_pred" predicts log(lambda).  "y_true" is a pair of values,
     # consisting of <N, T>, where "N" is the number of events and "T" is the
     # length of exposure.  (So, for the same lambda, if you have twice the
     # exposure, you'd expect to see about twice the events.)  In the case that
     # T=1 for all observations, this loss function reduces to the Poisson()
     # above.
-    y_lambda = convert_to_tensor(y_pred)
+    y_log_lambda = one_dim(convert_to_tensor(y_pred))
     y_observations = tf_cast(y_true, y_pred.dtype)
-    num_events = y_observations[:, 0]
-    num_events = tf.reshape(num_events, (-1,))
-    exposure = y_observations[:, 1]
-    exposure = tf.reshape(exposure, (-1,))
+    num_events = one_dim(y_observations[:, 0])
+    exposure = one_dim(y_observations[:, 1])
 
     # Rescale Lambda to account for exposure
-    y_lambda = exposure * y_lambda
-    return -K.mean(
-        num_events*y_lambda
-        - exp(y_lambda),
-        axis=-1
-    )
+    y_log_lambda = y_log_lambda + log(exposure)
+
+    neg_log_likelihood = -(num_events*y_log_lambda - exp(y_log_lambda))
+    return neg_log_likelihood
 
 
-def Negative_Binomial(y_true, y_pred):
-    num_events = tf_cast(y_true, y_pred.dtype)
+def Negative_binomial_link_1(y_true, y_pred):
+    # There are multiple possible link functions for negative binomial
+    # regression; we present one here.
+    num_events = one_dim(tf_cast(y_true, y_pred.dtype))
 
     y_pred = convert_to_tensor(y_pred)
-    # Extract distribution parameters
-    r = y_pred[:, 0]
-    r = tf.reshape(r, (-1,))
+
+    r = one_dim(y_pred[:, 0])
     # (Link function:) Convert from R to R^+
     r = exp(r)
 
-    p = y_pred[:, 1]
-    p = tf.reshape(p, (-1,))
+    p = one_dim(y_pred[:, 1])
     # (Link function:) Convert from R to [0,1]
     p = sigmoid(p)
 
-    return -K.mean(
+    neg_log_likelihood = -(
         lgamma(num_events+r)
         + num_events*log(1-p)
         - lgamma(r)
-        + r*log(p),
-        axis=-1
-    )
+        + r*log(p))
+    return neg_log_likelihood
 
 
-def Negative_Binomial_with_exposure(y_true, y_pred):
-    # Natural rate for neg binomial is (1-p)/p
-    # So, changing exposure by alpha means we reset to
-    # p_rescaled = p / [p + alpha(1-p)]
+def Negative_binomial_link_1_with_exposure(y_true, y_pred):
+    # To handle exposure, we need to interpret our original
+    # distribution as the count function of some underlying
+    # stochastic process.  For a Poisson distribution, this
+    # is easy; we use the Poisson process, with i.i.d.
+    # exponentially distributed interarrival times.
+
+    # The situation is not so clear when we have a negative
+    # binomial distribution for the count, because there
+    # are multiple stochastic processes we can choose from.
+
+    # In practical terms, given an NB(r, p) distribution,
+    # if we wish to scale the rate by alpha, we can either
+    # treat the rate as r or as (1-p)/p.  If we wish
+    # to rescale exposure by alpha, then, we can either do
+    #    r  =>  alpha*r
+    # or
+    #    p  =>  p / [p + alpha*(1-p)]
+    # The former situation corresponds to a Negative Binomial
+    # Levy Process, which has a few nice theoretical
+    # properties, so we choose to do that.
     y_pred = convert_to_tensor(y_pred)
 
-    # Extract distribution parameters
-    r = y_pred[:, 0]
-    r = tf.reshape(r, (-1,))
+    r = one_dim(y_pred[:, 0])
     # (Link function:) Convert from R to R^+
     r = exp(r)
 
-    p = y_pred[:, 1]
-    p = tf.reshape(p, (-1,))
+    p = one_dim(y_pred[:, 1])
     # (Link function:) Convert from R to [0,1]
     p = sigmoid(p)
 
     y_observations = tf_cast(y_true, y_pred.dtype)
-    num_events = y_observations[:, 0]
-    num_events = tf.reshape(num_events, (-1,))
-    exposure = y_observations[:, 1]
-    exposure = tf.reshape(exposure, (-1,))
+    num_events = one_dim(y_observations[:, 0])
+    exposure = one_dim(y_observations[:, 1])
 
-    p = p / (p + exposure * (1 - p))
-    return -K.mean(
+    r = exposure * r
+    neg_log_likelihood = -(
         lgamma(num_events+r)
-        + y_true*log(1-p)
+        + num_events*log(1-p)
         - lgamma(r)
-        + r*log(p),
-        axis=-1
+        + r*log(p)
     )
+    return neg_log_likelihood
