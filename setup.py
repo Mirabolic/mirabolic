@@ -1,9 +1,13 @@
 # How to upload to PyPI:
-# (1) Change "version" file as you want.
+# (1) Change "mirabolic/version" file as you want.
+# (2) Clean up any old cruft:
+#       rm -rf mirabolic.egg-info dist build
 # (2) Make a matching tagged release on GitHub:
-#     https://github.com/Mirabolic/mirabolic/releases/new
-# (3) python setup.py sdist bdist_wheel
-# (4) twine upload dist/*
+#       https://github.com/Mirabolic/mirabolic/releases/new
+# (3) Build package
+#       python setup.py sdist bdist_wheel
+# (4) Upload package
+#       twine upload dist/*
 
 import os
 import pathlib
