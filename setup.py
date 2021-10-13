@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 setup(
     name='mirabolic',
     packages=find_namespace_packages(),
-    version='0.0.1',
+    version='0.0.2',
     license='MIT',
     description='Statistical and Machine Learning tools from Mirabolic',
     long_description=README,
