@@ -1,3 +1,4 @@
+import os
 import pathlib
 from setuptools import setup, find_namespace_packages
 
@@ -5,19 +6,23 @@ from setuptools import setup, find_namespace_packages
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = (HERE / "README.md").read_text()
+README = os.path.join(HERE, "README.md").read_text()
+
+with open(os.path.join(HERE, 'version'), mode='r') as fp:
+    version = fp.readline().rstrip()
 
 setup(
     name='mirabolic',
     packages=find_namespace_packages(),
-    version='0.0.2',
+    version=version,
     license='MIT',
     description='Statistical and Machine Learning tools from Mirabolic',
     long_description=README,
     long_description_content_type="text/markdown",
     author='Bill Bradley',
     url='https://github.com/Mirabolic/mirabolic',
-    download_url='https://github.com/Mirabolic/mirabolic/archive/refs/tags/v0.0.2.tar.gz',  # noqa: E501
+    # We assume we keep the GitHub tag name consistent with the version
+    download_url='https://github.com/Mirabolic/mirabolic/archive/refs/tags/v%s.tar.gz' % version,  # noqa: E501
     include_package_data=True,
     keywords=['Statistics', 'Machine Learning'],
     install_requires=[

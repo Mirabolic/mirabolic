@@ -1,4 +1,5 @@
-__version__ = '0.0.2'
+with open('version', mode='r') as fp:
+    __version__ = fp.readline().rstrip()
 
 # We import some of the functions at the top of the module for ease of use.
 
