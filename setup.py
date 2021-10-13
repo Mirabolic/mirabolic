@@ -6,7 +6,8 @@ from setuptools import setup, find_namespace_packages
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = os.path.join(HERE, "README.md").read_text()
+with open(os.path.join(HERE, "README.md")) as fp:
+    README = fp.read()
 
 with open(os.path.join(HERE, 'version'), mode='r') as fp:
     version = fp.readline().rstrip()
