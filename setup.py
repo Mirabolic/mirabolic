@@ -1,3 +1,10 @@
+# How to upload to PyPI:
+# (1) Change "version" file as you want.
+# (2) Make a matching tagged release on GitHub:
+#     https://github.com/Mirabolic/mirabolic/releases/new
+# (3) python setup.py sdist bdist_wheel
+# (4) twine upload dist/*
+
 import os
 import pathlib
 from setuptools import setup, find_namespace_packages
