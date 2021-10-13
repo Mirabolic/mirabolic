@@ -1,5 +1,5 @@
 import pathlib
-from setuptools import setup
+from setuptools import setup, find_namespace_packages
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='mirabolic',
-    packages=['mirabolic'],
+    packages=find_namespace_packages(),
     version='0.0.1',
     license='MIT',
     description='Statistical and Machine Learning tools from Mirabolic',
@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/markdown",
     author='Bill Bradley',
     url='https://github.com/Mirabolic/mirabolic',
-    # download_url='https://github.com/user/reponame/archive/v_01.tar.gz',
+    download_url='https://github.com/Mirabolic/mirabolic/archive/refs/tags/v0.0.2.tar.gz',  # noqa: E501
     include_package_data=True,
     keywords=['Statistics', 'Machine Learning'],
     install_requires=[
