@@ -9,7 +9,7 @@ HERE = pathlib.Path(__file__).parent
 with open(os.path.join(HERE, "README.md")) as fp:
     README = fp.read()
 
-with open(os.path.join(HERE, 'version'), mode='r') as fp:
+with open(os.path.join(HERE, 'mirabolic', 'version'), mode='r') as fp:
     version = fp.readline().rstrip()
 
 setup(
