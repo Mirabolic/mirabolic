@@ -9,6 +9,6 @@ with open(os.path.join(os.path.dirname(__file__), 'version'), mode='r') as fp:
 from mirabolic.neural_glm.actuarial_loss_functions import (
     Poisson_link,
     Poisson_link_with_exposure,
-    Negative_binomial_link_1,
-    Negative_binomial_link_1_with_exposure,
+    Negative_binomial_link,
+    Negative_binomial_link_with_exposure,
 )

@@ -38,9 +38,9 @@ def basic_glm_model(num_features=None,
     elif loss == 'Negative Binomial':
         output_dim = 2
         if not exposure:
-            loss = actuarial_loss_functions.Negative_binomial_link_1
+            loss = actuarial_loss_functions.Negative_binomial_link
         else:
-            loss = actuarial_loss_functions.Negative_binomial_link_1_with_exposure  # noqa: E501
+            loss = actuarial_loss_functions.Negative_binomial_link_with_exposure  # noqa: E501
 
     model = Sequential()
     # Note: bias=False, i.e., no constant term; if you want a constant term,

@@ -1,14 +1,34 @@
 # Loss functions corresponding to some popular actuarial statistical models.
 
-# These functions all correspond to the negative log-likelihood of the
-# corresponding distribution (with data-constant terms suppressed).  In
-# typical fashion, we ignore terms that are constant functions of the
-# observed data, since they do not affect the gradients.
+# Broadly speaking, these loss functions compute the negative log-likelihood
+# of some distributions of interest (Poisson, Negative Binomial).  In typical
+# fashion, we suppress terms that are constant given the data, since they
+# disappear when we take a gradient with respect to the parameters
+
+# We also allow an exposure term, i.e., we are estimating the rate of a
+# process, but each observation may have a different (known) amount of
+# observed time.
+
+# Except for OLS, GLMs usually do not predict a distribution's parameters
+# directly; instead, they predict some "link" function of the parameters.  For
+# instance, instead of predicting the "lambda" in a Poisson distribution,
+# they predict log(lambda).  The link function is chosen so that the 
+# resulting range covers the reals.  Neural nets benefit from this link
+# function the same way that GLMs do. Note that to use the output, the 
+# inverse link function should be applied.
+
+# Finally, the link function can sometimes produce very large values.  Once
+# the neural net is producing moderately decent estimates, this problem is
+# minor, but after a random initialization it can be easy for training to
+# produce infinite values.  We provide numerically stable versions of these
+# loss functions by flattening extreme values.  This corresponds to some
+# assumption about the typical (exposure-corrected) rate, namely that we
+# should not see more than (say) a thousand events.
 
 import tensorflow as tf
 from tensorflow.python.framework.ops import convert_to_tensor
 from tensorflow.python.ops.math_ops import cast as tf_cast
-from tensorflow.math import log, lgamma, exp, sigmoid
+from tensorflow.math import minimum, maximum, log, lgamma, exp, sigmoid
 
 
 def one_dim(t):
@@ -23,9 +43,17 @@ def Poisson_link(y_true, y_pred):
     y_log_lambda = one_dim(convert_to_tensor(y_pred))
     num_events = one_dim(tf_cast(y_true, y_pred.dtype))
 
-    # We ignore terms in the neg log likelihood that are constant given
-    # the observations, since they're irrelevant for minimization
-    neg_log_likelihood = -(num_events*y_log_lambda - exp(y_log_lambda))
+    # Numerically stabilize.  Note: e^10 = 22,026
+    max_log_lambda = tf.constant(10.0)
+    y_log_lambda_bounded = minimum(y_log_lambda, max_log_lambda)
+    excess = tf.nn.relu(y_log_lambda - y_log_lambda_bounded)
+    # Make derivative of excess region roughly consistent
+    out_of_bound_slope = exp(max_log_lambda)
+    out_of_bound_penalty = out_of_bound_slope * excess
+
+    neg_log_likelihood = -(
+        num_events*y_log_lambda_bounded - exp(y_log_lambda_bounded))
+    neg_log_likelihood += out_of_bound_penalty
     return neg_log_likelihood
 
 
@@ -44,34 +72,54 @@ def Poisson_link_with_exposure(y_true, y_pred):
     # Rescale Lambda to account for exposure
     y_log_lambda = y_log_lambda + log(exposure)
 
-    neg_log_likelihood = -(num_events*y_log_lambda - exp(y_log_lambda))
+    # Numerically stabilize.  Note: e^10 = 22,026
+    max_log_lambda = tf.constant(10.0)
+    y_log_lambda_bounded = minimum(y_log_lambda, max_log_lambda)
+    excess = tf.nn.relu(y_log_lambda - y_log_lambda_bounded)
+    # Make derivative of excess region roughly consistent
+    out_of_bound_slope = exp(max_log_lambda)
+    out_of_bound_penalty = out_of_bound_slope * excess
+
+    neg_log_likelihood = -(
+        num_events*y_log_lambda_bounded - exp(y_log_lambda_bounded))
+    neg_log_likelihood += out_of_bound_penalty
     return neg_log_likelihood
 
 
-def Negative_binomial_link_1(y_true, y_pred):
+def Negative_binomial_link(y_true, y_pred):
     # There are multiple possible link functions for negative binomial
     # regression; we present one here.
     num_events = one_dim(tf_cast(y_true, y_pred.dtype))
 
     y_pred = convert_to_tensor(y_pred)
 
-    r = one_dim(y_pred[:, 0])
-    # (Link function:) Convert from R to R^+
-    r = exp(r)
+    r_link = one_dim(y_pred[:, 0])
 
-    p = one_dim(y_pred[:, 1])
+    # Numerically stabilize.  Note: e^10 = 22,026
+    max_r_link = tf.constant(10.0)
+    r_link_bounded = minimum(r_link, max_r_link)
+    excess = tf.nn.relu(r_link - r_link_bounded)
+    # Make derivative of excess region roughly consistent
+    out_of_bound_slope = max_r_link * exp(max_r_link)
+    out_of_bound_penalty = out_of_bound_slope * excess
+
+    # (Link function:) Convert from R to R^+
+    r_bounded = exp(r_link_bounded)
+
+    p_link = one_dim(y_pred[:, 1])
     # (Link function:) Convert from R to [0,1]
-    p = sigmoid(p)
+    p = sigmoid(p_link)
 
     neg_log_likelihood = -(
-        lgamma(num_events+r)
+        lgamma(num_events+r_bounded)
         + num_events*log(1-p)
-        - lgamma(r)
-        + r*log(p))
+        - lgamma(r_bounded)
+        + r_bounded*log(p))
+    neg_log_likelihood += out_of_bound_penalty
     return neg_log_likelihood
 
 
-def Negative_binomial_link_1_with_exposure(y_true, y_pred):
+def Negative_binomial_link_with_exposure(y_true, y_pred):
     # To handle exposure, we need to interpret our original
     # distribution as the count function of some underlying
     # stochastic process.  For a Poisson distribution, this
@@ -92,25 +140,35 @@ def Negative_binomial_link_1_with_exposure(y_true, y_pred):
     # The former situation corresponds to a Negative Binomial
     # Levy Process, which has a few nice theoretical
     # properties, so we choose to do that.
-    y_pred = convert_to_tensor(y_pred)
-
-    r = one_dim(y_pred[:, 0])
-    # (Link function:) Convert from R to R^+
-    r = exp(r)
-
-    p = one_dim(y_pred[:, 1])
-    # (Link function:) Convert from R to [0,1]
-    p = sigmoid(p)
-
     y_observations = tf_cast(y_true, y_pred.dtype)
     num_events = one_dim(y_observations[:, 0])
     exposure = one_dim(y_observations[:, 1])
 
-    r = exposure * r
+    y_pred = convert_to_tensor(y_pred)
+
+    # Account for exposure
+    r_link = one_dim(y_pred[:, 0])
+    r_link = r_link + log(exposure)
+
+    # Numerically stabilize.  Note: e^10 = 22,026
+    max_r_link = tf.constant(10.0)
+    r_link_bounded = minimum(r_link, max_r_link)
+    excess = tf.nn.relu(r_link - r_link_bounded)
+    # Make derivative of excess region roughly consistent
+    out_of_bound_slope = max_r_link * exp(max_r_link)
+    out_of_bound_penalty = out_of_bound_slope * excess
+
+    # (Link function:) Convert from R to R^+
+    r_bounded = exp(r_link_bounded)
+
+    p_link = one_dim(y_pred[:, 1])
+    # (Link function:) Convert from R to [0,1]
+    p = sigmoid(p_link)
+
     neg_log_likelihood = -(
-        lgamma(num_events+r)
+        lgamma(num_events+r_bounded)
         + num_events*log(1-p)
-        - lgamma(r)
-        + r*log(p)
-    )
+        - lgamma(r_bounded)
+        + r_bounded*log(p))
+    neg_log_likelihood += out_of_bound_penalty
     return neg_log_likelihood
