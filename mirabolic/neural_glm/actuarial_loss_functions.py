@@ -1,4 +1,5 @@
-# Loss functions corresponding to some popular actuarial statistical models.
+# Loss functions and metrics corresponding to some popular actuarial
+# statistical models.
 
 # Broadly speaking, these loss functions compute the negative log-likelihood
 # of some distributions of interest (Poisson, Negative Binomial).  In typical
@@ -28,7 +29,7 @@
 import tensorflow as tf
 from tensorflow.python.framework.ops import convert_to_tensor
 from tensorflow.python.ops.math_ops import cast as tf_cast
-from tensorflow.math import minimum, maximum, log, lgamma, exp, sigmoid
+from tensorflow.math import minimum, log, lgamma, exp, sigmoid, square
 
 
 def one_dim(t):
@@ -172,3 +173,42 @@ def Negative_binomial_link_with_exposure(y_true, y_pred):
         + r_bounded*log(p))
     neg_log_likelihood += out_of_bound_penalty
     return neg_log_likelihood
+
+###############################################
+# Metrics
+# 
+# The standard TensorFlow metric functions don't quite work out of the box;
+# we provide a few modified versions here for Poisson regression with exposure.
+
+
+def mse_poisson_exposure(y_true, y_pred):
+    y_observations = tf_cast(y_true, y_pred.dtype)
+    num_events = one_dim(y_observations[:, 0])
+    exposure = one_dim(y_observations[:, 1])
+    y_pred = one_dim(y_pred)
+
+    exp_pred = exp(y_pred)
+    val = square(exp_pred * exposure - num_events)
+    return(val)
+
+
+def gini_poisson_exposure(y_true, y_pred):
+    y_observations = tf_cast(y_true, y_pred.dtype)
+    num_events = one_dim(y_observations[:, 0])
+    exposure = one_dim(y_observations[:, 1])
+    y_pred = one_dim(y_pred)
+
+    total_events = tf.math.reduce_sum(num_events)
+    # If no events are present, it's not exactly clear what
+    # to do; we return Gini=0, which is arguably correct.
+    if total_events == 0:
+        return(tf.constant(0.0))
+    # Correct for exposure
+    y_pred += log(exposure)
+    sort_order = tf.argsort(y_pred, direction='DESCENDING')
+    fraction_events_sorted = tf.gather(
+        num_events / total_events, sort_order)
+    cumulative_fractions = tf.math.cumsum(fraction_events_sorted)
+    fraction_under_curve = tf.math.reduce_mean(cumulative_fractions)
+    gini_coefficient = 2 * (fraction_under_curve - 0.5)
+    return(gini_coefficient)

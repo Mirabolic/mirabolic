@@ -28,6 +28,7 @@ def basic_glm_model(num_features=None,
             lr_schedule = .001
         optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 
+    metrics = []
     if (loss == 'Poisson'):
         # "output_dim" = "how many numbers do we predict?"
         output_dim = 1
@@ -35,6 +36,9 @@ def basic_glm_model(num_features=None,
             loss = actuarial_loss_functions.Poisson_link
         else:
             loss = actuarial_loss_functions.Poisson_link_with_exposure
+            metrics += [
+                actuarial_loss_functions.mse_poisson_exposure,
+                actuarial_loss_functions.gini_poisson_exposure]
     elif loss == 'Negative Binomial':
         output_dim = 2
         if not exposure:
@@ -53,7 +57,8 @@ def basic_glm_model(num_features=None,
         use_bias=False,
         name='betas',
     ))
-    model.compile(loss=loss, optimizer=optimizer)
+
+    model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
     return(model)
 
 
@@ -66,7 +71,7 @@ def build_and_train_basic_glm(
     x_test=None, y_test=None,
     batch_size=None,
     epochs=400,
-    verbose=0,
+    verbose=1,
     exposure=False,
     learning_rate_decay=False,
     random_seed=None,
