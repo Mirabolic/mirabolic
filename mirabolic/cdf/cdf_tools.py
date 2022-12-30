@@ -182,7 +182,7 @@ def cdf_plot(
     confidence=0.9,  # How wide is the confidence interval/band?
     # Statistical and control parameters
     presorted=False,  # Is the data already sorted?
-    bound="marginal_quick",  # What kind of CI? (E.g., DKW or marginal?)
+    bound="marginal_opt",  # What kind of CI? (E.g., DKW or marginal?)
     ecdf_type=None,  # Exactly how do we define the empirical CDF?
     max_points=128,  # How many points to compute?
     # Plotting parameters
@@ -270,7 +270,7 @@ def cdf_plot(
     if plot_figure:
         # Use Seaborn defaults if desired
         if seaborn:
-            sns.set()
+            sns.set_theme()
 
         # Use specified or default Matplotlib axis
         if ax is None:
@@ -291,5 +291,16 @@ def cdf_plot(
         plt.plot(x, y, **plot_central_kw)
         plt.fill_between(x, y_lower, y_upper, **plot_confidence_kw)
 
-    results = dict(x=x, y=y, y_lower=y_lower, y_upper=y_upper, index_list=index_list)
+    DKW_epsilon_bound = None
+    if bound == "DKW":
+        DKW_epsilon_bound = 1 - y_lower[-1]
+
+    results = dict(
+        x=x,
+        y=y,
+        y_lower=y_lower,
+        y_upper=y_upper,
+        index_list=index_list,
+        DKW_epsilon_bound=DKW_epsilon_bound,
+    )
     return results
