@@ -14,7 +14,7 @@ from scipy import interpolate
 # sure, this is probably the estimator you want to use.
 
 
-def CDF_CI_marginal_quick(a=None, N=None, confidence=None, **kwargs):
+def cdf_CI_marginal_quick(a=None, N=None, confidence=None, **kwargs):
     # The marginal distribution is beta-distributed, and this calculates a
     # (marginal) confidence interval exactly.  This interval is guaranteed
     # to contain the mode, but is not necessarily the smallest possible
@@ -25,10 +25,6 @@ def CDF_CI_marginal_quick(a=None, N=None, confidence=None, **kwargs):
     if a == 1:
         lower = 0
         upper = beta.ppf(confidence, a, b)
-        if np.isnan(upper):
-            print("sefes")
-            import IPython
-            IPython.embed()
         return (lower, upper)
     if a == N:
         lower = beta.ppf(1 - confidence, a, b)
@@ -37,18 +33,16 @@ def CDF_CI_marginal_quick(a=None, N=None, confidence=None, **kwargs):
 
     mode = (a - 1) / (a + b - 2)
     mode_cumu_prob = beta.cdf(mode, a, b)
-    lower_prob = mode_cumu_prob - confidence * mode_cumu_prob
-    upper_prob = mode_cumu_prob + confidence * (1 - mode_cumu_prob)
+    lower_prob = max(mode_cumu_prob - confidence * mode_cumu_prob, 0.0)
+    # upper_prob = min(mode_cumu_prob + confidence * (1 - mode_cumu_prob),1.0)
+    upper_prob = lower_prob + confidence
     lower = beta.ppf(lower_prob, a, b)
     upper = beta.ppf(upper_prob, a, b)
 
-    if np.isnan(lower):
-        import IPython
-        IPython.embed()
     return (lower, upper)
 
 
-def CDF_CI_marginal_opt(a=None, N=None, confidence=None, max_steps=6, **kwargs):
+def cdf_CI_marginal_opt(a=None, N=None, confidence=None, max_steps=6, **kwargs):
     # The marginal distribution is beta-distributed, and this calculates a
     # (marginal) confidence interval exactly.  There are different choices
     # for the confidence interval.  If N>1, then there is a unique shortest
@@ -58,31 +52,30 @@ def CDF_CI_marginal_opt(a=None, N=None, confidence=None, max_steps=6, **kwargs):
 
     b = N + 1 - a
 
-    if a==1:
+    if a == 1:
         lower = 0
         upper = beta.ppf(confidence, a, b)
-        import IPython
-        IPython.embed()
         return (lower, upper)
-    if a==N:
+    if a == N:
         lower = beta.ppf(1 - confidence, a, b)
         upper = 1
         return (lower, upper)
 
     # Choose a reasonable starting guess
-    lower, upper = CDF_CI_marginal_quick(i=i, N=N, confidence=confidence, **kwargs)
+    lower, upper = cdf_CI_marginal_quick(a=a, N=N, confidence=confidence, **kwargs)
 
     # We want a relatively small step size in the context of our
     # distribution
-    delta = 0.1 / (N ** 2)
+    delta = min(0.1 / (N ** 2), 0.0001)
 
-    B_norm = np.exp(loggamma(a+b) - loggamma(a) - loggamma(b))
+    B_norm = np.exp(loggamma(a + b) - loggamma(a) - loggamma(b))
 
     # lower_guess should always be in [0, max_lower_guess]
     max_lower = beta.ppf(1 - confidence, a, b)
 
     def recover_upper(lower):
-        return beta.ppf(beta.cdf(lower, a, b) + confidence, a, b)
+        prob = min(beta.cdf(lower, a, b) + confidence, 1.0)
+        return beta.ppf(prob, a, b)
 
     def f_0(lower):
         # f_0 should be monotonically increasing for a,b>=2
@@ -97,23 +90,25 @@ def CDF_CI_marginal_opt(a=None, N=None, confidence=None, max_steps=6, **kwargs):
         f_right = f_0(lower + delta)
         return (f_right - f_left) / delta
 
-    for step in range(max_steps):
+    for step_count in range(max_steps):
         f_0_val = f_0(lower)
         f_1_val = f_1(lower, f_left=f_0_val)
-        step = f_0_val / f_1_val
-        lower = lower - step
+        step_size = f_0_val / f_1_val
+        lower = lower - step_size
         # delta = min(delta, np.abs(step) / 100)
-        if step < delta:
+        if np.abs(step_size) < delta:
             break
 
-    return (lower, recover_upper(lower))
+    upper = recover_upper(lower)
+
+    return (lower, upper)
 
 
 # Compute Dvoretzky-Kiefer-Wolfowitz confidence bands.
-def CDF_CI_DKW(a=None, N=None, confidence=None, **kwargs):
+def cdf_CI_DKW(a=None, N=None, confidence=None, **kwargs):
     # See, e.g.,
     # https://en.wikipedia.org/wiki/Dvoretzky%E2%80%93Kiefer%E2%80%93Wolfowitz_inequality
-    epsilon = np.sqrt(np.log(2.0 / confidence) / (2.0 * float(N)))
+    epsilon = np.sqrt(np.log(2.0 / (1 - confidence)) / (2.0 * float(N)))
 
     y = ecdf_value(a, N, ecdf_type="classical")
     return (y - epsilon, y + epsilon)
@@ -121,12 +116,20 @@ def CDF_CI_DKW(a=None, N=None, confidence=None, **kwargs):
 
 def confidence_interval_bounds(**kwargs):
     bound = kwargs["bound"]
+    confidence = kwargs["confidence"]
+
+    if confidence == 0:
+        v = ecdf_value(**kwargs)
+        return (v, v)
+    if confidence == 1:
+        return (0, 1)
+
     if bound == "DKW":
-        fn = CDF_CI_DKW
+        fn = cdf_CI_DKW
     elif bound == "marginal_quick":
-        fn = CDF_CI_marginal_quick
+        fn = cdf_CI_marginal_quick
     elif bound == "marginal_opt":
-        fn = CDF_CI_marginal_opt
+        fn = cdf_CI_marginal_opt
     else:
         raise ValueError(f"Unknown bound {bound}")
 
@@ -139,7 +142,7 @@ def confidence_interval_bounds(**kwargs):
     return (lower, upper)
 
 
-def ecdf_value(a=None, N=None, ecdf_type=None, bound=None):
+def ecdf_value(a=None, N=None, ecdf_type=None, bound=None, **kwargs):
     assert a <= N
 
     # Note that the DKW inequality assumes the "classic"
@@ -168,12 +171,12 @@ def ecdf_value(a=None, N=None, ecdf_type=None, bound=None):
     elif ecdf_type == "mean":
         return a / (N + 1)
     elif ecdf_type == "mode":
-        return (a-1) / (N - 1)
+        return (a - 1) / (N - 1)
     else:
         ValueError(f"Unknown cdf_type {ecdf_type}")
 
 
-def CDF_plot(
+def cdf_plot(
     # Key arguments
     data=None,
     confidence=0.9,  # How wide is the confidence interval/band?
@@ -236,7 +239,7 @@ def CDF_plot(
         N_plot = N
     N_plot = min(N, max_points)
     # Choose N_plot numbers evenly spread between 0 and N-1 (inclusive)
-    index_list = np.linspace(0, N-1, N_plot).round().astype(int)
+    index_list = np.linspace(0, N - 1, N_plot).round().astype(int)
 
     # Compute estimates
     x = []
@@ -244,7 +247,7 @@ def CDF_plot(
     y_lower = []
     y_upper = []
     for i in index_list:
-        a=i+1
+        a = i + 1
         x.append(data[i])  # i-th largest value
         y.append(ecdf_value(a=a, N=N, ecdf_type=ecdf_type, bound=bound))
         if N == 1:
@@ -255,10 +258,14 @@ def CDF_plot(
             break
 
         lower, upper = confidence_interval_bounds(
-            a=a, N=N, confidence=confidence, bound=bound
+            a=a, N=N, confidence=confidence, bound=bound, ecdf_type=ecdf_type
         )
         y_lower.append(lower)
         y_upper.append(upper)
+    x = np.array(x)
+    y = np.array(y)
+    y_upper = np.array(y_upper)
+    y_lower = np.array(y_lower)
 
     if plot_figure:
         # Use Seaborn defaults if desired
@@ -283,22 +290,6 @@ def CDF_plot(
 
         plt.plot(x, y, **plot_central_kw)
         plt.fill_between(x, y_lower, y_upper, **plot_confidence_kw)
-        print(y_lower[:5], y_upper[:5])
 
-    results = dict(x=x, y=y, y_lower=y_lower, y_upper=y_upper)
+    results = dict(x=x, y=y, y_lower=y_lower, y_upper=y_upper, index_list=index_list)
     return results
-
-
-data = np.random.randn(500)
-print(1)
-plt.figure()
-results = CDF_plot(data=data)
-print(2)
-#plt.figure()
-#CDF_plot(data=data, bound="marginal_opt")
-print(3)
-#plt.figure()
-#CDF_plot(data=data, bound="DKW")
-print(4)
-
-plt.show()
