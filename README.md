@@ -1,6 +1,22 @@
 # Mirabolic
 Tools for statistical modeling and analysis.
 
+## CDF Confidence Intervals
+
+When examining data, it can be very helpful to plot data as a [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  When interpreting
+a CDF, or comparing two of them, one often wishes for something akin to a
+confidence interval.
+
+Somewhat surprisingly, it is possible to compute these intervals exactly.  (More precisely, suppose we draw n samples and consider the i-th smallest; if the probability distribution is continuous, then the distribution of the corresponding quantile has a Beta distribution.)
+
+We provide a simple function for plotting CDFs with credibility envelopes; one invokes
+it by calling something like:
+```
+mirabolic.cdf_plot(data=[17.2, 5.1, 13, ...])
+```
+
+More simple examples can be found in `mirabolic/cdf/sample_usage.py`
+
 ## Neural Nets for GLM regression
 
 GLMs ([Generalized Linear Models](https://en.wikipedia.org/wiki/Generalized_linear_model)) are a relatively broad class of statistical model first popularlized in the 1970s.  These have grown popular in the actuarial literature as a method of predicting insurance claims costs and frequency.
