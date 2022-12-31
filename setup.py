@@ -40,6 +40,9 @@ setup(
     install_requires=[
         'tensorflow>=2.4.1',
         'numpy>=1.19.2',
+        'scipy>=1.8.0',
+        'pandas>=1.0.0',
+        'matplotlib>=3.5.1',
         'seaborn>=0.11.2',
     ],
     classifiers=[
