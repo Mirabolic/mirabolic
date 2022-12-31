@@ -20,42 +20,44 @@ this_dir = pathlib.Path(__file__).parent
 with open(os.path.join(this_dir, "README.md")) as fp:
     README = fp.read()
 
-with open(os.path.join(this_dir, 'mirabolic', 'version'), mode='r') as fp:
+with open(os.path.join(this_dir, "mirabolic", "version"), mode="r") as fp:
     version = fp.readline().rstrip()
 
 setup(
-    name='mirabolic',
+    name="mirabolic",
     packages=find_namespace_packages(),
     version=version,
-    license='MIT',
-    description='Statistical and Machine Learning tools from Mirabolic',
+    license="MIT",
+    description="Statistical and Machine Learning tools from Mirabolic",
     long_description=README,
     long_description_content_type="text/markdown",
-    author='Bill Bradley',
-    url='https://github.com/Mirabolic/mirabolic',
+    author="Bill Bradley",
+    url="https://github.com/Mirabolic/mirabolic",
     # We assume we keep the GitHub tag name consistent with the version
-    download_url='https://github.com/Mirabolic/mirabolic/archive/refs/tags/v%s.tar.gz' % version,  # noqa: E501
+    download_url="https://github.com/Mirabolic/mirabolic/archive/refs/tags/v%s.tar.gz"
+    % version,  # noqa: E501
     include_package_data=True,
-    keywords=['Statistics', 'Machine Learning', 'CDF', 'Quantiles'],
+    package_data={"": ["version"]},
+    keywords=["Statistics", "Machine Learning", "CDF", "Quantiles"],
     install_requires=[
-        'tensorflow>=2.4.1',
-        'numpy>=1.19.2',
-        'scipy>=1.8.0',
-        'pandas>=1.0.0',
-        'matplotlib>=3.5.1',
-        'seaborn>=0.11.2',
+        "tensorflow>=2.4.1",
+        "numpy>=1.19.2",
+        "scipy>=1.8.0",
+        "pandas>=1.0.0",
+        "matplotlib>=3.5.1",
+        "seaborn>=0.11.2",
     ],
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Topic :: Scientific/Engineering :: Artificial Intelligence',
-        'Topic :: Scientific/Engineering :: Mathematics',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',        
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
 )
