@@ -36,10 +36,11 @@ setup(
     # We assume we keep the GitHub tag name consistent with the version
     download_url='https://github.com/Mirabolic/mirabolic/archive/refs/tags/v%s.tar.gz' % version,  # noqa: E501
     include_package_data=True,
-    keywords=['Statistics', 'Machine Learning'],
+    keywords=['Statistics', 'Machine Learning', 'CDF', 'Quantiles'],
     install_requires=[
         'tensorflow>=2.4.1',
         'numpy>=1.19.2',
+        'seaborn>=0.11.2',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -51,5 +52,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 )
