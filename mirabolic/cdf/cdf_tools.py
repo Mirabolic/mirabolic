@@ -220,8 +220,8 @@ def cdf_plot(
     # Make sure no NaNs or Infs...
     if not np.isfinite(data).all():
         bad_index = np.min(np.where(~np.isfinite(data)))
-        print(f"data[{bad_index}] = {data[bad_index]}")
-        raise ValueError("Nonfinite values!")
+        msg = f"Nonfinite values!  data[{bad_index}] = {data[bad_index]}"
+        raise ValueError(msg)
 
     # Sort data if necessary
     if presorted == False:
