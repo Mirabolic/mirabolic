@@ -1,5 +1,11 @@
 # Mirabolic
-Tools for statistical modeling and analysis.
+Tools for statistical modeling and analysis, written by [Mirabolic](https://www.mirabolic.net/).  These modules can be installed by running
+```
+pip install --upgrade mirabolic
+```
+and the source code can be found at
+
+https://github.com/Mirabolic/mirabolic
 
 ## CDF Confidence Intervals
 

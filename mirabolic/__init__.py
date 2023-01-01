@@ -7,11 +7,3 @@ with open(os.path.join(os.path.dirname(__file__), "version"), mode="r") as fp:
 
 # Tool for plotting CDFs with confidence intervals
 from mirabolic.cdf.cdf_tools import cdf_plot
-
-# Tensorflow loss functions for count data
-from mirabolic.neural_glm.actuarial_loss_functions import (
-    Poisson_link,
-    Poisson_link_with_exposure,
-    Negative_binomial_link,
-    Negative_binomial_link_with_exposure,
-)

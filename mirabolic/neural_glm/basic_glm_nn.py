@@ -1,6 +1,6 @@
 # Simple neural net implementing a GLM
 
-import actuarial_loss_functions
+import mirabolic.neural_glm as neural_glm
 import numpy as np
 import keras
 from keras.models import Sequential
@@ -33,18 +33,18 @@ def basic_glm_model(num_features=None,
         # "output_dim" = "how many numbers do we predict?"
         output_dim = 1
         if not exposure:
-            loss = actuarial_loss_functions.Poisson_link
+            loss = neural_glm.Poisson_link
         else:
-            loss = actuarial_loss_functions.Poisson_link_with_exposure
+            loss = neural_glm.Poisson_link_with_exposure
             metrics += [
-                actuarial_loss_functions.mse_poisson_exposure,
-                actuarial_loss_functions.gini_poisson_exposure]
+                neural_glm.mse_poisson_exposure,
+                neural_glm.gini_poisson_exposure]
     elif loss == 'Negative Binomial':
         output_dim = 2
         if not exposure:
-            loss = actuarial_loss_functions.Negative_binomial_link
+            loss = neural_glm.Negative_binomial_link
         else:
-            loss = actuarial_loss_functions.Negative_binomial_link_with_exposure  # noqa: E501
+            loss = neural_glm.Negative_binomial_link_with_exposure  # noqa: E501
 
     model = Sequential()
     # Note: bias=False, i.e., no constant term; if you want a constant term,
