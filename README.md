@@ -11,7 +11,7 @@ When exploring data, it can be very helpful to plot observations as a [CDF](http
 
 When interpreting a CDF, or comparing two of them, one often wishes for something akin to a confidence interval.  Somewhat surprisingly, it is possible to compute these intervals exactly.[^1]
 
-^1: More precisely, suppose we draw a sample of $n$ observations and consider the $i$-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), $B(i, n-i+1)$.
+[^1]: More precisely, suppose we draw a sample of $n$ observations and consider the $i$-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), $B(i, n-i+1)$.
 
 For a single data point, the uncertainty around its quantile can be thought of as a confidence interval (actually, a (credible interval)[https://en.wikipedia.org/wiki/Credible_interval], since we know the prior distribution).  If we consider all the data points, then we refer to a confidence band (or credible band)
 
