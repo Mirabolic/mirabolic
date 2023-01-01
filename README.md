@@ -9,19 +9,18 @@ https://github.com/Mirabolic/mirabolic
 
 ## CDF Confidence Intervals
 
-When examining data, it can be very helpful to plot data as a [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  When interpreting
-a CDF, or comparing two of them, one often wishes for something akin to a
-confidence interval.
+When examining data, it can be very helpful to plot data as a [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  Producing a CDF essentially amounts to sorting our observed data from smallest to largest.  We hope that the value in the middle of the sorted list is near the median, the value 90% of the way up the list is near the 90th percentile, and so forth.
 
-Somewhat surprisingly, it is possible to compute these intervals exactly.  (More precisely, suppose we draw a sample of $n$ observations and consider the $i$-th smallest; if the probability distribution is continuous, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution).)
+When interpreting a CDF, or comparing two of them, one often wishes for something akin to a confidence interval.  Somewhat surprisingly, it is possible to compute these intervals exactly.  (More precisely, suppose we draw a sample of $n$ observations and consider the $i$-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), $B(i, n-i+1)$.)
 
-We provide a simple function for plotting CDFs with credibility envelopes; one invokes
-it by calling something like:
+For a single data point, the uncertainty around its quantile can be thought of as a confidence interval (actually, a (credible interval)[https://en.wikipedia.org/wiki/Credible_interval], since we know the prior distribution).  If we consider all the data points, then we refer to a confidence band (or credible band)
+
+We provide a simple function for plotting CDFs with credible bands; one invokes it by calling something like:
 ```
 mirabolic.cdf_plot(data=[17.2, 5.1, 13, ...])
 ```
 
-More simple examples can be found in `mirabolic/cdf/sample_usage.py`
+More examples can be found in (`mirabolic/cdf/sample_usage.py`)[https://github.com/Mirabolic/mirabolic/blob/main/mirabolic/cdf/sample_usage.py].
 
 ## Neural Nets for GLM regression
 
