@@ -15,7 +15,7 @@ When interpreting a CDF, or comparing two of them, one often wishes for somethin
 
 For a single data point, the uncertainty around its quantile can be thought of as a confidence interval.  If we consider all the data points, then we refer to a *confidence band*.[^Credible]
 
-[^Credible]: Because we have access to a prior distribution on quantiles, these are arguably *credible intervals* (see https://en.wikipedia.org/wiki/Credible_interval) and *credible bands*, rather than confidence intervals and bands.  We do not concern ourselves with this detail.
+[^Credible]: Because we have access to a prior distribution on quantiles, these are arguably *[credible intervals](https://en.wikipedia.org/wiki/Credible_interval)* and *credible bands*, rather than confidence intervals and bands.  We do not concern ourselves with this detail.
 
 We provide a simple function for plotting CDFs with confidence bands; one invokes it by calling something like:
 ```
