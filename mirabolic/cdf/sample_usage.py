@@ -14,12 +14,12 @@ data = np.random.randn(120)
 ##############
 # A basic plot
 #
-# By default, we use a "90% marginal credibility interval",
+# By default, we use a "90% marginal credible interval",
 # which means that if take any data point, there is a 90%
 # probability that it falls within the shaded region above
 # it (so, we should think of a vertical interval).  Note
 # that the chance that *all* the data points jointly fall
-# in their credibility interval is less than 90%; if you
+# in their credible interval is less than 90%; if you
 # want a joint bound, see the next example.
 plt.figure()
 mirabolic.cdf_plot(data=data, seaborn=True)
