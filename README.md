@@ -9,13 +9,15 @@ and the source code can be found at https://github.com/Mirabolic/mirabolic
 
 When exploring data, it can be very helpful to plot observations as a [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  Producing a CDF essentially amounts to sorting the observed data from smallest to largest.  We hope that the value in the middle of the sorted list is near the median, the value 90% of the way up the list is near the 90th percentile, and so forth.
 
-When interpreting a CDF, or comparing two of them, one often wishes for something akin to a confidence interval.  Somewhat surprisingly, it is possible to compute these intervals exactly.[^1]
+When interpreting a CDF, or comparing two of them, one often wishes for something akin to a confidence interval.  Somewhat surprisingly, it is possible to compute these intervals exactly.[^Beta]
 
-[^1]: More precisely, suppose we draw a sample of $n$ observations and consider the $i$-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), $B(i, n-i+1)$.
+[^Beta]: More precisely, suppose we draw a sample of n observations and consider the i-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), B(i, n-i+1).
 
-For a single data point, the uncertainty around its quantile can be thought of as a confidence interval (actually, a (credible interval)[https://en.wikipedia.org/wiki/Credible_interval], since we know the prior distribution).  If we consider all the data points, then we refer to a confidence band (or credible band)
+For a single data point, the uncertainty around its quantile can be thought of as a confidence interval.  If we consider all the data points, then we refer to a *confidence band*.[^Credible]
 
-We provide a simple function for plotting CDFs with credible bands; one invokes it by calling something like:
+[^Credible]: Because we have access to a prior distribution on quantiles, these are arguably *(credible intervals)[https://en.wikipedia.org/wiki/Credible_interval]* and *credible bands*, rather than confidence intervals and bands.  We do not concern ourselves with this detail.
+
+We provide a simple function for plotting CDFs with confidence bands; one invokes it by calling something like:
 ```
 mirabolic.cdf_plot(data=[17.2, 5.1, 13, ...])
 ```
