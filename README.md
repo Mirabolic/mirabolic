@@ -13,7 +13,7 @@ When examining data, it can be very helpful to plot data as a [CDF](https://en.w
 a CDF, or comparing two of them, one often wishes for something akin to a
 confidence interval.
 
-Somewhat surprisingly, it is possible to compute these intervals exactly.  (More precisely, suppose we draw n samples and consider the i-th smallest; if the probability distribution is continuous, then the distribution of the corresponding quantile has a Beta distribution.)
+Somewhat surprisingly, it is possible to compute these intervals exactly.  (More precisely, suppose we draw a sample of $n$ observations and consider the $i$-th smallest; if the probability distribution is continuous, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution).)
 
 We provide a simple function for plotting CDFs with credibility envelopes; one invokes
 it by calling something like:
