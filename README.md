@@ -13,7 +13,7 @@ Which style won?  The new campaign looks good, but how do you know it's not just
 We provide such a tool here:
 ```python
 import numpy as np
-from rate_tools import rate_comparison
+import mirabolic
 import matplotlib.pyplot as plt
 
 # Make some synthetic data
