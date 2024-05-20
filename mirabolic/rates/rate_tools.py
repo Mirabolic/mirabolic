@@ -65,6 +65,9 @@ def rate_comparison(
     patch_type="rectangle",
     patch_alpha=0.3,
     label_font_size=8,
+    xlabel="A arm",
+    ylabel="B arm",
+    title="Response Rate Correlation",
 ):
     """
     We run a series of A/B experiments.  In each experiment, we run a number of trials of
@@ -200,9 +203,9 @@ def rate_comparison(
         if labels is not None:
             plt.legend(legend_proxy, legend_label, prop={"size": label_font_size})
 
-        plt.xlabel("A arm")
-        plt.ylabel("B arm")
-        plt.title("Response Rate Correlation")
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
         plt.scatter(
             results["A"]["rate"], results["B"]["rate"], marker=".", color="black"
         )
