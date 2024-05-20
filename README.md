@@ -5,6 +5,40 @@ pip install --upgrade mirabolic
 ```
 and the source code can be found at https://github.com/Mirabolic/mirabolic
 
+## Comparing Event Rates
+Suppose you run a website.  Every day you run a new email campaign to drive traffic to your site.  You're considering a new approach, so you A/B test your campaigns: a portion of your emails use the new style of campaign and the rest use the old style.
+
+Which style won?  The new campaign looks good, but how do you know it's not just a random fluke? You vaguely remember an old stats teacher saying something about designing experiments with sufficient statistical power for a target effect size, but you don't know what the effect size is going to be, and you've already run the experiment!  You really just want some simple way of visualizing the data you already have to see if the new style of campaigns are an improvement, or if it's all just random noise.
+
+We provide such a tool here:
+```python
+import numpy as np
+from rate_tools import rate_comparison
+import matplotlib.pyplot as plt
+
+# Make some synthetic data
+num_campaigns = 8
+num_emails = 2000  # Number of emails in one arm of one campaign
+# In this example, the "B" arm has a slightly higher conversion rate
+num_conversions_A = np.random.binomial(num_emails, 0.03, size=num_campaigns)
+num_conversions_B = np.random.binomial(num_emails, 0.035, size=num_campaigns)
+num_emails_A = num_campaigns * [num_emails]
+num_emails_B = num_campaigns * [num_emails]
+
+# Plot the figure
+plt.figure(figsize=(6, 6))
+results = mirabolic.rate_comparison(
+    num_successes_A=num_conversions_A,
+    num_successes_B=num_conversions_B,
+    num_trials_A=num_emails_A,
+    num_trials_B=num_emails_B,
+)
+plt.show()
+```
+
+This script will produce a scatter plot with 8 points.  Each point corresponds to a campaign, where the x-value is the conversion rate for the A arm (the old style, say) and the y-value is the conversion rate for the B arm (the new style).  Around each point is a confidence rectangle showing how seriously to take it.  If all the rectangles overlap with the diagonal line, then you don't have enough data to draw any conclusions (at least from individual campaigns).  If the rectangles mostly fall above the dotted line, then the new style is an improvement; if below, it's making things worse.
+
+
 ## CDF Confidence Intervals
 
 When exploring data, it can be very helpful to plot observations as a [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  Producing a CDF essentially amounts to sorting the observed data from smallest to largest.  We can treat[^iid] the value in the middle of the sorted list as approximately the median, the value 90% of the way up the list is near the 90th percentile, and so forth.
