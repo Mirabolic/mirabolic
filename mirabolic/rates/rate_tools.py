@@ -152,7 +152,6 @@ def rate_comparison(
         for rate_A, rate_B in zip(results["A"]["high"], results["B"]["high"]):
             MM = max(MM, max(rate_A, rate_B))
         ax.plot([mm, MM], [mm, MM], ":", color="black")
-        print("MMMMM", mm, MM)
 
         color_list = sns.color_palette("deep", 8)
         legend_proxy, legend_label = [], []
