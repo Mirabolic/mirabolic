@@ -116,7 +116,7 @@ def rate_comparison(
         assert num_experiments == len(num_trials[arm])
         for i in range(num_experiments):
             assert num_trials[arm][i] >= 1
-    if labels:
+    if labels is not None:
         assert num_experiments == len(labels)
 
     assert confidence > 0
