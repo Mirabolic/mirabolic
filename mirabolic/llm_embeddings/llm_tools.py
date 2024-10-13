@@ -63,9 +63,12 @@ def prepare_API_keys(logger=None):
         if logger is not None:
             logger.info(f"Loading {provider} API keys to environment...")
         if API_key is None:
-            raise ValueError(
-                f"API key error: Could not find {provider} API key {key_var}"
-            )
+            # Require keys for all providers...
+            # raise ValueError(
+            #     f"API key error: Could not find {provider} API key {key_var}"
+            # )
+            # Or just use the keys you've got...
+            continue
         API_keys[provider] = API_key
 
         if provider == "OpenAI":
@@ -81,6 +84,8 @@ def prepare_API_keys(logger=None):
                 api_key=API_key, base_url="https://api.lambdalabs.com/v1"
             )
         initialized_LLMs[provider] = True
+    if len(API_key) == 0:
+        raise ValueError("Could not find any LLM API keys. Maybe you need a .env file?")
     return
 
 

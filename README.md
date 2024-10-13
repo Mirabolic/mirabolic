@@ -5,14 +5,37 @@ pip install --upgrade mirabolic
 ```
 and the source code can be found at https://github.com/Mirabolic/mirabolic
 
+# Table of Contents
+- [Visualizing LLM Embeddings](#visualizing-llm-embeddings)
+  - [Installation](#installation)
+  - [Examples](#examples)
+- [Comparing Event Rates](#comparing-event-rates)
+- [CDF Confidence Intervals](#cdf-confidence-intervals)
+- [Neural Nets for GLM regression](#neural-nets-for-glm-regression)
+
 ## Visualizing LLM Embeddings
 Suppose we have a collection of paragraphs describing different things. We can use an LLM to "embed" those paragraphs, i.e., convert them into vectors in some high dimensional space. (In concrete terms: each paragraph is converted into a list of about 3000 numbers). Because of the magic of LLMs, similar paragraphs are supposed to cluster near each other in this high-dimensional space.
 
 But how do we know if that's actually happening? Well, we might be lucky enough to have labels describing a few types paragraphs. If that's the case, we can map the embeddings down to two dimensions, color the points by label, and look at the scatter plot. If our embeddings are working correctly, points with the same color will group together. 
 
-We provide a tool to automate this process. Note: this code uses OpenAI's model embedding API, so be sure you have an OpenAI account, and that you've put your API key in a `.env` file. This is a file with a single line that should look something like `OPENAI_API_KEY=sk-proj-....`
+### Installation
+Because this code invokes LLMs, we require a little extra setup. In particular, we use OpenAI's embedding models, which means that you, dear reader, need an OpenAI API key. For those unfamiliar with this process, we offer a primer.
 
-We provide an example, but first, let's make some data. (Note that here our "paragraph" is one or two words.)
+To get an OpenAI API key
+1  [Get a developer account on OpenAI.](https://platform.openai.com/docs/overview) (You'll need a credit card, I'm afraid. FWIW, small experiments typically cost several cents.)
+2  [Get an API key.](https://platform.openai.com/api-keys) This is a string of letters and numbers that begins `sk-`.
+
+Now that you have the API key, you need to store it where your system can find it. This can be writing a file called `.env` and sticking in the API key. (If you already have a file like that, just add this as an extra line).  The contents of your file should look like this:
+```
+OPENAI_API_KEY=sk-...
+```
+
+When you run this code, it will look for a `.env` file in the current directory; if it doesn't find it, it will look in the parent directory, and the parent's parent directory, and so on. This means that if you'd like, you can put the `.env` file in your home directory and code you execute will find it. If you're not running in a home directory, just make sure that there is a `.env` file in whatever directory you use.
+
+A word of warning: this key should stay secret. If you're working in a Git repo, be sure to .gitignore the .env file so you do not accidentally commit it.
+
+### Examples
+We provide an example, but first, let's make some data. (Note that here our "paragraph" is only one or two words.)
 ```python
 # Make some data that falls into natural classes
 dog_breeds = ["Labrador Retriever", "German Shepherd", "Golden Retriever", "Bulldog", "Poodle", "Beagle", "Rottweiler", "Yorkshire Terrier", "Boxer", "Dachshund"]
@@ -20,9 +43,7 @@ cat_breeds = ["Siamese", "Persian", "Maine Coon", "Ragdoll", "Bengal", "Sphynx",
 common_birds = ["Northern Cardinal", "American Robin", "Blue Jay", "House Sparrow", "Mourning Dove", "European Starling", "Black-capped Chickadee", "American Goldfinch", "Red-winged Blackbird", "Downy Woodpecker"]
 
 data = dog_breeds + cat_breeds + common_birds
-labels = (
-    len(dog_breeds) * ["dog"] + len(cat_breeds) * ["cat"] + len(common_birds) * ["birds"]
-)
+labels = len(dog_breeds) * ["dog"] + len(cat_breeds) * ["cat"] + len(common_birds) * ["birds"]
 ```
 Next, let's use an LLM to embed the data in a high dimension, then visualize it in two dimensions:
 ```python
@@ -32,9 +53,11 @@ embedder = mirabolic.llm_embedder(X=data, L=labels)
 embedder.run_all()
 ```
 
-![LLM_embedding_1](https://github.com/user-attachments/assets/f98cf64f-8274-46d5-9897-4a85c671c604)
+![LLM_embedding_3](https://github.com/user-attachments/assets/d17b5967-a599-4969-81e6-12cef2ba7106)
 
-Sometimes we might want to process the text before embedding it. We allow for arbitrary text transformations. Here's an example where the transformation itself invokes an LLM.
+Wow! Nice grouping of categories.
+
+Sometimes we might want to process the text before embedding it. The `llm_embedder()` allows for arbitrary text transformations. Here's an example in which the transformation itself invokes another LLM.
 ```python
 import mirabolic
 
@@ -54,7 +77,7 @@ def f(s):
 embedder = mirabolic.llm_embedder(X=data, L=labels, f=f)
 embedder.run_all()
 ```
-Because our LLM essentially injects into the classes, the clusters become murkier, but are still clearly visible.
+So, we transform the species name into a cutesy pet name (e.g., `Boxer` -> `Rocky Bal-bow-wow`, or `Russian Blue` -> `Czar Purrtin`). Of course, this makes it more difficult to distinguish the underlying species, so the clusters become murkier.  Nevertheless, the cat/dog/bird regions are still fairly visible:
 
 ![LLM_embedding_2](https://github.com/user-attachments/assets/38c04782-5a58-4ed7-bf3c-8a1ec8d43476)
 
@@ -96,15 +119,15 @@ Here's the output:
 The figure shows a scatter plot with 8 points.  Each point corresponds to a campaign, where the x-value is the conversion rate for the A arm (the old style, say) and the y-value is the conversion rate for the B arm (the new style).  Around each point is a confidence rectangle showing how seriously to take it.  If all the rectangles overlap with the diagonal line, then you don't have enough data to draw any conclusions (at least from individual campaigns).  If the rectangles mostly fall above the dotted line, then the new style is an improvement; if below, it's making things worse.
 
 
-## CDF Confidence Intervals
+## CDFs with Confidence Intervals
 
-When exploring data, it can be very helpful to plot observations as a [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  Producing a CDF essentially amounts to sorting the observed data from smallest to largest.  We can treat[^iid] the value in the middle of the sorted list as approximately the median, the value 90% of the way up the list is near the 90th percentile, and so forth.
+When exploring data, it can be very helpful to plot observations as a cumulative density function, or [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function).  (In medical contexts, doctors study the "survival function", which is 1 minus the CDF and essentially amounts to the same thing.) We plot a CDF by sorting the observed data from smallest to largest value.  We can treat[^iid] the value in the middle of the sorted list as approximately the median, the value 90% of the way up the list as near the 90th percentile, and so forth.
 
 [^iid]: We assume the data consists of i.i.d. draws from some unknown probability distribution.
 
 When interpreting a CDF, or comparing two of them, one often wishes for something akin to a confidence interval.  How close is the middle value to the median?  Somewhat surprisingly, it is possible to compute the corresponding confidence intervals exactly.[^Beta]
 
-[^Beta]: More precisely, suppose we draw a sample of n observations and consider the i-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), B(i, n-i+1).
+[^Beta]: More precisely, suppose we draw a sample of n i.i.d. observations and consider the i-th smallest; if we are sampling from *any* continuous probability distribution, then the distribution of the corresponding quantile has a [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution), B(i, n-i+1).
 
 For a single data point, the uncertainty around its quantile can be thought of as a confidence interval.  If we consider all the data points, then we refer to a *confidence band*.[^Credible]
 
