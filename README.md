@@ -5,6 +5,60 @@ pip install --upgrade mirabolic
 ```
 and the source code can be found at https://github.com/Mirabolic/mirabolic
 
+## Visualizing LLM Embeddings
+Suppose we have a collection of paragraphs describing different things. We can use an LLM to "embed" those paragraphs, i.e., convert them into vectors in some high dimensional space. (In concrete terms: each paragraph is converted into a list of about 3000 numbers). Because of the magic of LLMs, similar paragraphs are supposed to cluster near each other in this high-dimensional space.
+
+But how do we know if that's actually happening? Well, we might be lucky enough to have labels describing a few types paragraphs. If that's the case, we can map the embeddings down to two dimensions, color the points by label, and look at the scatter plot. If our embeddings are working correctly, points with the same color will group together. 
+
+We provide a tool to automate this process. Note: this code uses OpenAI's model embedding API, so be sure you have an OpenAI account, and that you've put your API key in a `.env` file. This is a file with a single line that should look something like `OPENAI_API_KEY=sk-proj-....`
+
+We provide an example, but first, let's make some data. (Note that here our "paragraph" is one or two words.)
+```python
+# Make some data that falls into natural classes
+dog_breeds = ["Labrador Retriever", "German Shepherd", "Golden Retriever", "Bulldog", "Poodle", "Beagle", "Rottweiler", "Yorkshire Terrier", "Boxer", "Dachshund"]
+cat_breeds = ["Siamese", "Persian", "Maine Coon", "Ragdoll", "Bengal", "Sphynx", "British Shorthair", "Abyssinian", "Scottish Fold", "Russian Blue"]
+common_birds = ["Northern Cardinal", "American Robin", "Blue Jay", "House Sparrow", "Mourning Dove", "European Starling", "Black-capped Chickadee", "American Goldfinch", "Red-winged Blackbird", "Downy Woodpecker"]
+
+data = dog_breeds + cat_breeds + common_birds
+labels = (
+    len(dog_breeds) * ["dog"]
+    + len(cat_breeds) * ["cat"]
+    + len(common_birds) * ["birds"]
+)
+```
+Next, let's use an LLM to embed the data in a high dimension, then visualize it in two dimensions:
+```python
+import mirabolic
+
+embedder = mirabolic.llm_embedder(X=data, L=labels)
+embedder.run_all()
+```
+
+![LLM_embedding_1](https://github.com/user-attachments/assets/f98cf64f-8274-46d5-9897-4a85c671c604)
+
+Sometimes we might want to process the text before embedding it. We allow for arbitrary text transformations. Here's an example where the transformation itself invokes an LLM.
+```python
+def f(s):
+    """
+    Replace the breed or species with a pet name.
+    """
+    prompt = (
+        f"I have a pet {s}. I need a name for my pet that is "
+        "some sort of outrageous pun that will reveal its breed or species. "
+        "Please reply with one name (and no other text)."
+    )
+    response = llm_tools.LLM_API(prompt)
+    print(f"{s}  =>  {response}")
+    return response
+
+embedder = mirabolic.llm_embedder(X=data, L=labels, f=f)
+embedder.run_all()
+```
+Because our LLM essentially injects into the classes, the clusters become murkier, but are still clearly visible.
+
+![LLM_embedding_2](https://github.com/user-attachments/assets/38c04782-5a58-4ed7-bf3c-8a1ec8d43476)
+
+
 ## Comparing Event Rates
 Suppose you run a website.  Every day you run a new email campaign to drive traffic to your site.  You're considering a new approach, so you A/B test your campaigns: a portion of your emails use the new style of campaign and the rest use the old style.
 
@@ -18,10 +72,10 @@ import matplotlib.pyplot as plt
 
 # Make some synthetic data
 num_campaigns = 8
-num_emails = 2000  # Number of emails in one arm of one campaign
+num_emails = 3000  # Number of emails in one arm of one campaign
 # In this example, the "B" arm has a slightly higher conversion rate
 num_conversions_A = np.random.binomial(num_emails, 0.03, size=num_campaigns)
-num_conversions_B = np.random.binomial(num_emails, 0.035, size=num_campaigns)
+num_conversions_B = np.random.binomial(num_emails, 0.04, size=num_campaigns)
 num_emails_A = num_campaigns * [num_emails]
 num_emails_B = num_campaigns * [num_emails]
 
@@ -35,8 +89,11 @@ results = mirabolic.rate_comparison(
 )
 plt.show()
 ```
+Here's the output:
 
-This script will produce a scatter plot with 8 points.  Each point corresponds to a campaign, where the x-value is the conversion rate for the A arm (the old style, say) and the y-value is the conversion rate for the B arm (the new style).  Around each point is a confidence rectangle showing how seriously to take it.  If all the rectangles overlap with the diagonal line, then you don't have enough data to draw any conclusions (at least from individual campaigns).  If the rectangles mostly fall above the dotted line, then the new style is an improvement; if below, it's making things worse.
+![response_rate_1](https://github.com/user-attachments/assets/b43cdaca-7351-4e0a-b29f-73ced4d5a44c)
+
+The figure shows a scatter plot with 8 points.  Each point corresponds to a campaign, where the x-value is the conversion rate for the A arm (the old style, say) and the y-value is the conversion rate for the B arm (the new style).  Around each point is a confidence rectangle showing how seriously to take it.  If all the rectangles overlap with the diagonal line, then you don't have enough data to draw any conclusions (at least from individual campaigns).  If the rectangles mostly fall above the dotted line, then the new style is an improvement; if below, it's making things worse.
 
 
 ## CDF Confidence Intervals
@@ -57,12 +114,17 @@ We provide a simple function for plotting CDFs with confidence bands; one invoke
 ```
 import mirabolic
 import matplotlib.pyplot as plt
+import random
 
-mirabolic.cdf_plot(data=[17.2, 5.1, 13, ...])
+data = [random.random() for _ in range(50)]
+mirabolic.cdf_plot(data=data)
 plt.show()
 ```
+The figure looks like this:
 
-More examples can be found in (`mirabolic/cdf/sample_usage.py`)[https://github.com/Mirabolic/mirabolic/blob/main/mirabolic/cdf/sample_usage.py].
+![CDF_1](https://github.com/user-attachments/assets/dbfb9640-78c4-4593-baf2-1ee1de591285)
+
+More examples can be found in [`mirabolic/cdf/sample_usage.py`](https://github.com/Mirabolic/mirabolic/blob/main/mirabolic/cdf/sample_usage.py).
 
 ## Neural Nets for GLM regression
 
