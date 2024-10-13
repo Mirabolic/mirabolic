@@ -1,0 +1,10 @@
+How to upload a new version of this code to PyPI:
+
+1) Bump the __version__. You do that by changing it in one place:
+    ~/Mirabolic/mirabolic/mirabolic/version
+2) Delete cruft:
+    rm -rf build dist *.egg-info __pycache__ mirabolic/__pycache__
+3) Package and upload to PyPI:
+    source ~/venv/bin/activate
+    python setup.py sdist bdist_wheel
+    twine upload dist/*
