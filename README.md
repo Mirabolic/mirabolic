@@ -10,7 +10,7 @@ and the source code can be found at https://github.com/Mirabolic/mirabolic
   - [Installation](#installation)
   - [Examples](#examples)
 - [Comparing Event Rates](#comparing-event-rates)
-- [CDF Confidence Intervals](#cdf-confidence-intervals)
+- [CDF Confidence Intervals](#cdfs-with-confidence-intervals)
 - [Neural Nets for GLM regression](#neural-nets-for-glm-regression)
 
 ## Visualizing LLM Embeddings
