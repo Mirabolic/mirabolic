@@ -36,6 +36,8 @@ embedder.run_all()
 
 Sometimes we might want to process the text before embedding it. We allow for arbitrary text transformations. Here's an example where the transformation itself invokes an LLM.
 ```python
+import mirabolic
+
 def f(s):
     """
     Replace the breed or species with a pet name.
@@ -45,7 +47,7 @@ def f(s):
         "some sort of outrageous pun that will reveal its breed or species. "
         "Please reply with one name (and no other text)."
     )
-    response = llm_tools.LLM_API(prompt)
+    response = mirabolic.LLM_API(prompt)
     print(f"{s}  =>  {response}")
     return response
 
