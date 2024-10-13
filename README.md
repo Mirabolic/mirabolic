@@ -21,9 +21,7 @@ common_birds = ["Northern Cardinal", "American Robin", "Blue Jay", "House Sparro
 
 data = dog_breeds + cat_breeds + common_birds
 labels = (
-    len(dog_breeds) * ["dog"]
-    + len(cat_breeds) * ["cat"]
-    + len(common_birds) * ["birds"]
+    len(dog_breeds) * ["dog"] + len(cat_breeds) * ["cat"] + len(common_birds) * ["birds"]
 )
 ```
 Next, let's use an LLM to embed the data in a high dimension, then visualize it in two dimensions:
