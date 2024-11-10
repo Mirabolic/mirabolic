@@ -84,7 +84,7 @@ def prepare_API_keys(logger=None):
                 api_key=API_key, base_url="https://api.lambdalabs.com/v1"
             )
         initialized_LLMs[provider] = True
-    if len(API_key) == 0:
+    if len(API_keys) == 0:
         raise ValueError("Could not find any LLM API keys. Maybe you need a .env file?")
     return
 
