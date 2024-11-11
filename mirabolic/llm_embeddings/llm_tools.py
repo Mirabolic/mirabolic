@@ -144,6 +144,7 @@ def structured_LLM_API(
     throw_safety_exception=True,
     mistrust_cache=False,
     flush_cache=False,
+    return_blob=False,
 ):
     """
     LLMs that guarantee structured output (e.g., JSON)
@@ -217,24 +218,28 @@ def structured_LLM_API(
     else:
         raise ValueError(f"Unknown/unsupported provider {provider}")
 
+    blob = dict(
+        prompt=prompt,
+        reply=formatted_response_as_dict,
+        provider=provider,
+        model=model_name,
+        index=index,
+        usage=usage,
+        refusal=refusal,
+    )
     if cache:
         with open(hash_gpt_file, "wb") as fp:
-            blob = dict(
-                prompt=prompt,
-                reply=formatted_response_as_dict,
-                provider=provider,
-                model=model_name,
-                index=index,
-                usage=usage,
-                refusal=refusal,
-            )
+
             pickle.dump(blob, fp)
 
     if throw_safety_exception and refusal:
         raise ValueError(refusal_string)
 
     # Return structured response.  If LLM refusal, return None.
-    return formatted_response_as_dict
+    if return_blob:
+        return blob
+    else:
+        return blob["reply"]
 
 
 def LLM_API(
@@ -251,6 +256,7 @@ def LLM_API(
     throw_safety_exception=False,
     mistrust_cache=False,
     flush_cache=False,
+    return_blob=False,
 ):
     # Note: for OpenAI, response_format = { "type": "json_object" } is useful.
     if model_name is None:
@@ -299,12 +305,20 @@ def LLM_API(
         else:
             response_format = None
 
+        messages = [
+            {"role": "user", "content": prompt},
+        ]
+        # The "o1" models have weirdnesses:
+        #   no system prompts per-se
+        #   can't handle JSON responses (on 10/24/24)
+        is_o1 = (provider == "OpenAI") and (model_name.startswith("o1-"))
+        if is_o1:
+            response_format = None
+        else:
+            messages += [{"role": "system", "content": system_prompt}]
         response = LLM_Client[provider].chat.completions.create(
             model=model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
             user="Mirabolic",  # Track what project these tokens are for
             response_format=response_format,
         )
@@ -378,16 +392,46 @@ def LLM_API(
     else:
         raise ValueError(f"Unknown provider {provider}")
 
+    blob = dict(
+        prompt=prompt,
+        reply=text,
+        provider=provider,
+        model=model_name,
+        index=index,
+        usage=usage,
+    )
     if cache:
         with open(hash_gpt_file, "wb") as fp:
-            blob = dict(
-                prompt=prompt,
-                reply=text,
-                provider=provider,
-                model=model_name,
-                index=index,
-                usage=usage,
-            )
             pickle.dump(blob, fp)
-    # Extract text of reply and return it
-    return text
+
+    if return_blob:
+        return blob
+    else:
+        return blob["reply"]
+
+
+# Cost of inference (as of 2024-11-11).
+#  key   = (provider, model)
+#  value = ($/1M input tokens, $/1M output tokens)
+inference_cost = {
+    ("OpenAI", "o1-preview-2024-09-12"): (15.00, 60.00),
+    ("OpenAI", "gpt-4o-2024-08-06"): (2.50, 10.00),
+    ("OpenAI", "gpt-4o-mini-2024-07-18"): (0.15, 0.60),
+    ("Google", "gemini-1.5-pro"): (1.25, 5.00),  # assuming <128K context
+    ("Google", "gemini-1.5-pro-v001"): (1.25, 5.00),  # assuming <128K context
+    ("Google", "gemini-1.5-pro-v002"): (1.25, 5.00),  # assuming <128K context
+    ("Google", "gemini-1.5-flash"): (0.075, 0.30),  # assuming <128K context
+}
+
+
+def compute_dollar_cost(blob):
+    # This is typically invoked via:
+    #   blob = LLM_API(my_prompt, return_blob=True)
+    #   compute_dollar_cost(blob)
+    input_rate, output_rate = inference_cost[(blob["provider"], blob["model"])]
+    # Convert to rate per token, instead of rate per 1M tokens
+    input_rate, output_rate = input_rate / 1000000, output_rate / 1000000
+    num_input_tokens = blob["usage"].prompt_tokens
+    num_output_tokens = blob["usage"].completion_tokens
+    cost_dollars = input_rate * num_input_tokens + output_rate * num_output_tokens
+    return cost_dollars
