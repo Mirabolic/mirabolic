@@ -180,8 +180,10 @@ def structured_LLM_API(
                 # Suspiciously empty cache... let's try that again.
                 pass
             else:
-                return blob["reply"]
-
+                if return_blob:
+                    return blob
+                else:
+                    return blob["reply"]
     prepare_API_keys(logger=logger)
 
     # Don't flood the LLM server with requests
@@ -282,8 +284,10 @@ def LLM_API(
                 # Suspiciously empty cache... let's try that again.
                 pass
             else:
-                return blob["reply"]
-
+                if return_blob:
+                    return blob
+                else:
+                    return blob["reply"]
     prepare_API_keys(logger=logger)
 
     # Don't flood the LLM server with requests
