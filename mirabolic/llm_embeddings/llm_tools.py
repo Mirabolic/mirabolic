@@ -184,6 +184,7 @@ def structured_LLM_API(
                     return blob
                 else:
                     return blob["reply"]
+
     prepare_API_keys(logger=logger)
 
     # Don't flood the LLM server with requests
@@ -228,6 +229,7 @@ def structured_LLM_API(
         index=index,
         usage=usage,
         refusal=refusal,
+        cached=True,
     )
     if cache:
         with open(hash_gpt_file, "wb") as fp:
@@ -239,6 +241,7 @@ def structured_LLM_API(
 
     # Return structured response.  If LLM refusal, return None.
     if return_blob:
+        blob["cached"] = False
         return blob
     else:
         return blob["reply"]
@@ -288,6 +291,7 @@ def LLM_API(
                     return blob
                 else:
                     return blob["reply"]
+
     prepare_API_keys(logger=logger)
 
     # Don't flood the LLM server with requests
@@ -403,12 +407,15 @@ def LLM_API(
         model=model_name,
         index=index,
         usage=usage,
+        cached=True,
     )
     if cache:
         with open(hash_gpt_file, "wb") as fp:
+
             pickle.dump(blob, fp)
 
     if return_blob:
+        blob["cached"] = False
         return blob
     else:
         return blob["reply"]
